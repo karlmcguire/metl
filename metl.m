@@ -1,19 +1,36 @@
 #import <AppKit/AppKit.h>
-#import <Foundation/Foundation.h>
 
 int
 main() {
-    @autoreleasepool {
-        NSSpeechSynthesizer* synth = [[NSSpeechSynthesizer alloc] initWithVoice: nil];
-        [synth startSpeakingString: @"Hello, world!"];
+    NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
+    
+    [NSApplication sharedApplication];
 
-        while(![synth isSpeaking]) {}
-        while([synth isSpeaking]) {}
+    NSUInteger windowStyle = NSTitledWindowMask | NSClosableWindowMask | NSResizableWindowMask;
 
-        [synth release];
-        
-        NSLog(@"%@", [NSDate date]);
-    }
+    NSRect windowRect = NSMakeRect(100, 100, 400, 400);
+
+    NSWindow* window = [[NSWindow alloc] initWithContentRect:windowRect
+                                         styleMask:windowStyle
+                                         backing:NSBackingStoreBuffered
+                                         defer:NO];
+
+    [window autorelease];
+
+    NSWindowController* windowController = [[NSWindowController alloc] initWithWindow:window];
+
+    [windowController autorelease];
+
+    NSTextView* textView = [[NSTextView alloc] initWithFrame:windowRect];
+    [textView autorelease];
+
+    [window setContentView:textView];
+    [textView insertText:@"Hello world!"];
+
+    [window orderFrontRegardless];
+    [NSApp run];
+
+    [pool drain];
 
     return 0;
 }

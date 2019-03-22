@@ -1,5 +1,5 @@
 LDFLAGS = -w
-CFLAGS = -O2 -w -framework Foundation -framework AppKit
+CFLAGS = -O2 -w -framework AppKit
 
 metl: metl.m
 
