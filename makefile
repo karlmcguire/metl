@@ -1,4 +1,5 @@
-CFLAGS = -Wextra -framework Foundation
+LDFLAGS = -w
+CFLAGS = -O2 -w -framework Foundation -framework AppKit
 
 metl: metl.m
 
