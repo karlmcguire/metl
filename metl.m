@@ -91,11 +91,11 @@ main() {
     rpd.colorAttachments[0].storeAction = MTLStoreActionStore;
 
     // iterate through colors
-    static float color = 0.0f;
-    color = (color > 1.0f) ? 0.0f : color + 0.01f;
+    static float col = 0.0f;
+    col = (col > 1.0f) ? 0.0f : col + 0.01f;
 
     // set color
-    rpd.colorAttachments[0].clearColor = MTLClearColorMake(color, 0, color, 1);
+    rpd.colorAttachments[0].clearColor = MTLClearColorMake(col, 0.5, col, 1);
 
     // create command buffer
     id<MTLCommandBuffer> commandBuffer = [commandQueue commandBuffer];
