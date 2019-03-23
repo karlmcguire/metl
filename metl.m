@@ -1,36 +1,131 @@
 #import <AppKit/AppKit.h>
+#import <MetalKit/MetalKit.h>
+
+@interface TerminalView : MTKView
+@end
 
 int
 main() {
-    NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
-    
-    [NSApplication sharedApplication];
+    @autoreleasepool {
+        // window frame
+        NSRect frame = NSMakeRect(0, 0, 1280, 720);
+        
+        // window style
+        int style = NSTitledWindowMask |
+                    NSClosableWindowMask |
+                    NSResizableWindowMask |
+                    NSMiniaturizableWindowMask;
 
-    NSUInteger windowStyle = NSTitledWindowMask | NSClosableWindowMask | NSResizableWindowMask;
+        // window pointer
+        NSWindow* window = [[NSWindow alloc] initWithContentRect:frame
+                                             styleMask:style
+                                             backing:NSBackingStoreBuffered
+                                             defer:NO];
 
-    NSRect windowRect = NSMakeRect(100, 100, 400, 400);
+        // set window title
+        window.title = @"metl";
 
-    NSWindow* window = [[NSWindow alloc] initWithContentRect:windowRect
-                                         styleMask:windowStyle
-                                         backing:NSBackingStoreBuffered
-                                         defer:NO];
+        // focus window 
+        [window cascadeTopLeftFromPoint:NSMakePoint(100, 100)];
+        [window makeKeyAndOrderFront:nil];
 
-    [window autorelease];
+        // set window view
+        window.contentView = [[TerminalView alloc] initWithFrame:frame];
 
-    NSWindowController* windowController = [[NSWindowController alloc] initWithWindow:window];
-
-    [windowController autorelease];
-
-    NSTextView* textView = [[NSTextView alloc] initWithFrame:windowRect];
-    [textView autorelease];
-
-    [window setContentView:textView];
-    [textView insertText:@"Hello world!"];
-
-    [window orderFrontRegardless];
-    [NSApp run];
-
-    [pool drain];
+        // start run loop
+        [NSApp run];
+    }
 
     return 0;
 }
+
+@implementation TerminalView {
+    id<MTLCommandQueue> commandQueue;
+    dispatch_semaphore_t mtlSemaphore;
+    MTLViewport viewport;
+    int swapChainBufferCount;
+}
+
+- (id)initWithFrame:(CGRect)frame {
+    // get gpu device
+    id<MTLDevice> device = MTLCreateSystemDefaultDevice();
+
+    // init self with gpu device
+    self = [super initWithFrame:frame device:device];
+
+    if(self) {
+        [self setup];
+    }
+
+    return self;
+}
+
+// TODO
+- (void)setup {
+    swapChainBufferCount = 3;
+
+    // view settings
+    self.colorPixelFormat = MTLPixelFormatBGRA8Unorm;
+
+    // create semaphore
+    mtlSemaphore = dispatch_semaphore_create(swapChainBufferCount);
+
+    // logical command queue for gpu
+    commandQueue = [self.device newCommandQueue];
+}
+
+// TODO
+// 
+// where the magic happens
+- (void)drawRect:(CGRect)rect {
+    // wait for semaphore
+    dispatch_semaphore_wait(mtlSemaphore, DISPATCH_TIME_FOREVER);
+
+    MTLRenderPassDescriptor *rpd = [MTLRenderPassDescriptor 
+                                    renderPassDescriptor];
+
+    // set up the rpd with defaults
+    rpd.colorAttachments[0].texture = self.currentRenderPassDescriptor.
+                                      colorAttachments[0].texture;
+    rpd.colorAttachments[0].loadAction = MTLLoadActionClear;
+    rpd.colorAttachments[0].storeAction = MTLStoreActionStore;
+
+    // iterate through colors
+    static float color = 0.0f;
+    color = (color > 1.0f) ? 0.0f : color + 0.01f;
+
+    // set color
+    rpd.colorAttachments[0].clearColor = MTLClearColorMake(color, 0, color, 1);
+
+    // create command buffer
+    id<MTLCommandBuffer> commandBuffer = [commandQueue commandBuffer];
+
+    // encode render command
+    id<MTLRenderCommandEncoder> encoder = [commandBuffer
+                                           renderCommandEncoderWithDescriptor:
+                                           rpd];
+
+    // establish viewport
+    viewport.originX = 0;
+    viewport.originY = 0;
+    viewport.width   = self.drawableSize.width;
+    viewport.height  = self.drawableSize.height;
+
+    // encode
+    [encoder setViewport:viewport];
+    [encoder endEncoding];
+
+    // set semaphore
+    __block dispatch_semaphore_t semaphore = mtlSemaphore;
+    
+    [commandBuffer addCompletedHandler:^(id<MTLCommandBuffer> buffer) {
+        dispatch_semaphore_signal(semaphore);
+    }];
+    [commandBuffer presentDrawable:self.currentDrawable];
+    [commandBuffer commit];
+
+    // draw
+    [super drawRect:rect];
+}
+
+@end
