@@ -5,5 +5,5 @@
 ## progress
 
 <p align="center">
-    <img src="https://i.imgur.com/Azx0jT1.png" />
+    <img src="https://i.imgur.com/boEZQ6Z.png" />
 </p>
