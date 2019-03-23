@@ -1,7 +1,7 @@
 LDFLAGS = -w
 CFLAGS = -O2 -w -framework Metal \
-		 		-framework MetalKit \
-				-framework AppKit
+                -framework MetalKit \
+                -framework AppKit
 
 metl: metl.m
 
